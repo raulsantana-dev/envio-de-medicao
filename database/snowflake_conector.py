@@ -14,7 +14,6 @@ def conectar_snowflake():
     Estabelece conexão com o banco Snowflake.
     """
     conn = snowflake.connector.connect(
-        account="sx27439.east-us-2.azure",
         user=loginSF,
         password=senhaSF,
         warehouse="PRODUCAO",
