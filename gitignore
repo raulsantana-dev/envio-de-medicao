@@ -1,0 +1,32 @@
+# Ambiente virtual
+venv/
+.env
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Arquivos temporários e de log
+*.log
+*.tmp
+*.bak
+
+# Pastas do sistema
+.DS_Store
+Thumbs.db
+
+# Jupyter/IPython
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# Excel e arquivos de evidência
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.zip
+*.rar
+*.png
+*.jpg

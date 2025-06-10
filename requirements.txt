@@ -1,0 +1,3 @@
+openpyxl
+snowflake-connector-python
+requests
