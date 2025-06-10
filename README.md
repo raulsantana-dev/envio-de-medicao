@@ -1,4 +1,4 @@
-# VAMOS_ENVIO_MEDICAO v1.0.0
+# ENVIO MEDICAO v1.0.0
 
 Projeto em **Python 3** para automação do processo de envio de medições. Utiliza integração com **Snowflake**, manipulação de **Excel**, automação de envio de e-mails e processamento de arquivos com evidências.
 
