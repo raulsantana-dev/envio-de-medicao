@@ -3,18 +3,17 @@ import pandas as pd
 import os
 import shutil
 from datetime import datetime
-from utils.excel_hander import gerar_planilha_para_cliente
+from utils.excel_hander import gerar_planilha_para_cliente, extrair_links_reais
 from utils.envio_email import enviar_email
 from dotenv import load_dotenv
 from database.snowflake_conector import insere_cliente
-from pathlib import Path
-from utils.excel_hander import extrair_links_reais  # novo import
+
 load_dotenv()
 
 async def processar_arquivo(caminho_andamento, caminho_finalizado, nome_arquivo, caminho_origem):
     try:
         mes_ano = datetime.now().strftime('%B/%Y').capitalize()
-        df = extrair_links_reais(caminho_andamento)  # usa função com hyperlinks reais
+        df = extrair_links_reais(caminho_andamento)
         clientes = df['cliente'].unique()
 
         for cliente_nome in clientes:
@@ -28,34 +27,35 @@ async def processar_arquivo(caminho_andamento, caminho_finalizado, nome_arquivo,
             # Validação
             validacao = df_cliente['Validação'].dropna().unique()[0] if not df_cliente['Validação'].dropna().empty else ""
 
+            # Captura todos os e-mails da célula (pode estar separado por , ou ;)
+            email_raw = df_cliente['Email'].dropna().values[0] if not df_cliente['Email'].dropna().empty else None
+            if email_raw:
+                destinatario = [e.strip() for e in email_raw.replace(';', ',').split(',') if e.strip()]
+            else:
+                print(f"⚠️ Nenhum e-mail encontrado para {cliente_nome}, pulando envio.")
+                continue
+
+            # Envia dados ao banco
             for _, linha in df_cliente.iterrows():
-                cliente = linha['cliente']
-                cnpj = linha['CNPJ/CPF']
-                chassi = linha['Chassi']
-                placa = linha['Placa 1']
-                codigo_infracao = linha['Cód. Da Infração']
-                ait = linha["AIT"]
+                cliente = linha['cliente'] if pd.notna(linha['cliente']) else ''
+                cnpj = linha['CNPJ/CPF'] if pd.notna(linha['CNPJ/CPF']) else ''
+                chassi = linha['Chassi'] if pd.notna(linha['Chassi']) else ''
+                placa = linha['Placa 1'] if pd.notna(linha['Placa 1']) else ''
+                codigo_infracao = linha['Cód. Da Infração'] if pd.notna(linha['Cód. Da Infração']) else ''
+                ait = linha['AIT'] if pd.notna(linha['AIT']) else ''
                 print(f"{cliente} | {cnpj} | {chassi} | {placa} | {codigo_infracao} | {ait} | {mes_ano}")
                 insere_cliente(cliente, cnpj, chassi, ait, mes_ano, placa)
 
-                # Captura o primeiro e-mail
-                email_raw = df_cliente['Email'].dropna().values[0] if not df_cliente['Email'].dropna().empty else None
-                if email_raw:
-                     # Divide por ";" ou "," e remove espaços extras
-                    destinatario = [e.strip() for e in email_raw.replace(';', ',').split(',') if e.strip()]
-                else:
-                    print(f"⚠️ Nenhum e-mail encontrado para {cliente_nome}, pulando envio.")
-                    continue
-            # Gera planilha
+            # Gera planilha para o cliente
             caminho_arquivo = gerar_planilha_para_cliente(cliente_nome, df_cliente.to_dict(orient="records"))
             print(f"📝 Planilha gerada para {cliente_nome}: {caminho_arquivo}")
 
-            # Envia e-mail com todos os links
+            # Envia e-mail
             await asyncio.sleep(1)
             await enviar_email(destinatario, cliente_nome, caminho_arquivo, texto_links, validacao)
             print(f"📧 E-mail enviado para {destinatario}")
 
-            # Remove planilha temporária
+            # Remove a planilha temporária
             try:
                 if os.path.isfile(caminho_arquivo):
                     os.remove(caminho_arquivo)
@@ -65,17 +65,30 @@ async def processar_arquivo(caminho_andamento, caminho_finalizado, nome_arquivo,
 
         print(f"✅ Arquivo {nome_arquivo} finalizado com sucesso.")
 
-
     except Exception as e:
         print(f"❌ Erro ao processar cria_planilha {nome_arquivo}: {e}")
         shutil.move(caminho_andamento, caminho_origem)
-    else:
-        nome_arquivo_novo = f"{cliente_nome.strip().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        caminho_destino = os.path.join(caminho_finalizado, nome_arquivo_novo)
 
-# Move e renomeia
-        shutil.move(caminho_andamento, caminho_destino)
-        print(f"📦 Arquivo renomeado para '{nome_arquivo_novo}' e movido para 'Finalizados'")
+    else:
+        # Move o arquivo para a pasta Finalizados com o mesmo nome original
+      data_hoje = datetime.now()
+    # Monta nomes das pastas
+    mes = data_hoje.strftime("(%m) - %B_%Y").lower()  # exemplo: (06) - junho_2025
+    dia = data_hoje.strftime("%d_%m_%Y")              # exemplo: 18_06_2025
+
+    # Cria o caminho final com subpastas
+    caminho_finalizado_final = os.path.join(caminho_finalizado, mes, dia)
+
+    # Garante que os diretórios existem
+    os.makedirs(caminho_finalizado_final, exist_ok=True)
+    # Caminho completo de destino
+    caminho_destino = os.path.join(caminho_finalizado_final, nome_arquivo)
+
+    # Move o arquivo
+    shutil.move(caminho_andamento, caminho_destino)
+
+    print(f"📦 Arquivo movido para '{caminho_finalizado_final}': {nome_arquivo}")
+
 
 # adição de trecho antigo para aprendizado, desconsiderar caso for executar o codigo #
 
