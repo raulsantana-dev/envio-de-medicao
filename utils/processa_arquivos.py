@@ -78,7 +78,7 @@ async def processar_arquivo(caminho_andamento, caminho_finalizado, nome_arquivo,
 
     # Cria o caminho final com subpastas
     caminho_finalizado_final = os.path.join(caminho_finalizado, mes, dia)
-
+    nome_arquivo = os.path.basename(caminho_andamento)
     # Garante que os diretórios existem
     os.makedirs(caminho_finalizado_final, exist_ok=True)
     # Caminho completo de destino
