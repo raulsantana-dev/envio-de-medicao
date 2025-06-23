@@ -77,7 +77,8 @@ async def processar_arquivo(caminho_andamento, caminho_finalizado, nome_arquivo,
     dia = data_hoje.strftime("%d_%m_%Y")              # exemplo: 18_06_2025
 
     # Cria o caminho final com subpastas
-    caminho_finalizado_final = os.path.join(caminho_finalizado, mes, dia)
+
+    caminho_finalizado_final = os.path.join('C:/Users/raul.araujo/JSL SA/Grupo Vamos - Execução Robôs - Medição - Envio de Medição/Finalizados', mes, dia)
     nome_arquivo = os.path.basename(caminho_andamento)
     # Garante que os diretórios existem
     os.makedirs(caminho_finalizado_final, exist_ok=True)
